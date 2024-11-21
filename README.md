@@ -12,37 +12,41 @@ class player
 class croupier
 
 
-
-from sources/game import poker
-
 classe bot() ??
 
-Initialisation de la partie : classe Poker()
+Initialisation de la partie : classe Poker_game()
 
-paramètres :
-- joueurs : list d'id 
+paramètres qui doivent être initialisé pour une partie:
+- joueurs : list d'id
 - blind initiale b > 0
-- stacks : dictionnaire { joueurs : stack}
+- stacks initiaux : dictionnaire { joueurs : stack }
 - règle d'évolution de la blind
 
-Initialisation : classe table(Poker) ?? super_init
+Initialisation : classe table(Poker)
 
 - Créer un ordre fixe dans les joueurs : J = [j_1, ..., j_p]
-- initialiser la variable dealer
+- initialise la variable dealer
+- initialise le croupier
 
 Mise à jour de la table entre chaque tour :
 - delete joueurs avec stacks = 0
 - change le dealer
 - upgrade la blind si necessaire
-- donner une glace au croupier
 
-Créer une classe round(Table) :
-- dealer distribue les cartes aux joueurs
+classe croupier() :
+- permet de gérer un tour et notamment les mises
+
+classe round(Table) :
+
+- croupier initialise la liste des joueurs actifs initialement dans le round
+- croupier distribue les cartes aux joueurs
+
 - Preflop : 
     - petite blind/ grosse blind mise auto
-    - for j in Joueurs à partir du Dealer + 2 :
-        - action du joueurs j
-        - stop if 
+    - for j in Joueurs actifs à partir du Dealer + 2 :
+        - action du joueur j
+        - if action == fold : joueur j n'est plus actif
+        - if action call
     - 
 - Flop :
 - Turn :
