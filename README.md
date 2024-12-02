@@ -8,6 +8,10 @@
 ``bot.py``
 
 ``class Poker_game``
+``class Table``
+``class Round``  
+
+Maybe :
 ``class player``
 ``class croupier``
 
@@ -16,53 +20,66 @@
 Initialisation de la partie : ``class Poker_game()``
 
 paramètres qui doivent être initialisés pour une partie:
-- joueurs : list d'id (str)
-- blind initiale : variable ``b`` > 0
-- stacks initiaux : dictionnaire ``Stacks : { joueurs : stack }``
-- règle d'évolution de la blind, tuple (frequence, multiplicateur) : on multiplie la blind tout les x tours de table
+- joueurs : set of ``id`` (str) ; ``players = {j_1, j_2, ...}``
+- blind initiale : variable ``b > 0``
+- stacks initiaux : dictionnaire ``Stacks : { j_i : stack }``
+- règle d'évolution de la blind, tuple (frequence, multiplicateur) : on multiplie la blind tout les x tours de table : 
+``blind_rule = ( number_of_turn, multiplicative_factor)``
 
 class ``croupier(Poker_game)`` : (?)
 - gère la distirbution des cartes (?)
 
 Initialisation : ``class Table(Poker_game)``
 
-- Créer un ordre aléatoire et fixe dans les joueurs : ``J_table = [1 : j_?, ..., p : j_?]``
+- Créer un ordre aléatoire et fixe dans les joueurs : ``table_order = [j_i, ..., j_n]``
 - initialise la position du dealer : ``dealer_pos : int``
-- initialise un croupier (classe croupier)
+- initialise le joueur dealer : ``dealer_id : str ``
+- initalise ``number_of_round : int`` à 0
+- initialise un croupier (classe croupier) (?)
 
 Mise à jour de la table entre chaque round :
 - met à jour la position du dealer :
     dealer pos += 1 moduelo nombre joueurs
-    dealer_id = id du dealer
+    mise à jour ``dealer_id``
     if Stacks[dealer_id] == 0 :
         on skip ce tour de dealer
-- augmente la blind si necessaire
+- on augmente ``number_of_round``
 
 
-clas round(Table) :
+class round(Table) :
 
-- initialiser pot à 0
-- initialiser mise minimale à 0
+- initialiser ``pot : float`` à 0
+- initialiser ``minimal_bid : float`` à 0
 
-- initialise la liste des joueurs actifs dans le round (ceux avec un stack non nul) : ``J_round = [joueurs if Stack[joueurs > 0]]``
+- initialise la liste des joueurs actifs dans le round (ceux avec un stack non nul) en gardant l'ordre des joueurs :   
+
+``J_round = [joueurs for joueurs in table_order if Stack[joueurs > 0]]``
+
 - dictionnaire : ``Round = {joueurs : {état : wait , mise actuelle : 0 , cartes : (_,_)} }``
 
 - on suit les différentes étapes du jeux : ``Step = [Preflop, Flop, Turn, River]``
 
 desctiption de la variable ``état`` du dict ``Round`` : 
-- au début tout le monde est en wait car personne n'a parlé
-- lorsqu'une personne parle, son état passe soit en call (si check ou call), soit en fold
+- ``état`` is in ``{"wait", "in", "fold" }``
+- la parole va passer indéfiniment de joueurs en joeurs juesqu'à qu'une condition d'arrêt soit rencontré
+- au début tout le monde est en "``wait``" car personne n'a parlé
+- lorsqu'une personne parle, son état passe soit en ``"in"`` (si ``action_joueurs = check or call``), soit en ``"fold"``
+- si quelqu'un ``"raise"``, alors tout les joueurs qui ne sont pas ``"fold"`` passe en ``"wait"``
 - si une personne est en fold, on ne lui propose plus jamais de parlé lors du round
-- si une personne est wait, on ne termine pas le round mais on lui demande de parlé
-- si une personne est en call :
-    - si la mise minimale = mise du joueur, on termine la phase du round (preflop, flop etc..)
-    - si la mise minimale > mise du joueur (cela veut dire qu'il y a eu un raise), on propose au joueur de parler à nouveau
+- si une personne est wait, à son tour de parole, on lui demande de parler
+- si une personne est "in" :
+    - on termine la phase actuelle (flop etc)
+
+    <!-- - si la mise minimale = mise du joueur, on termine la phase du round (preflop, flop etc..)
+    - si la mise minimale > mise du joueur (cela veut dire qu'il y a eu un raise), on propose au joueur de parler à nouveau -->
 
 
 - Preflop :
 
     - croupier distribue les cartes aux joueurs : mise à jour du dict ``Round``
-    - petite blind/ grosse blind mise auto grâce à la variable ``Dealer_pos`` : 
+    - ``cartes : tuple = (numéro: int, couleur: int)``
+    - petite blind/ grosse blind mise auto grâce à la variable ``dealer_id`` :
+        - retrieve a ``dealer_pos`` 
         - ``id_petite  = J_pos[Dealer]`` et ``id _grosse = J_pos[Dealer+1]``
         - stack du joueur petite blinde diminue de 0.5 blind
         - stack du joueur grosse blind diminue de 1 blind
