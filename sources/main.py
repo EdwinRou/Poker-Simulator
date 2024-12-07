@@ -296,6 +296,7 @@ class Table():
         self.blind_rule = blind_rule
         self.dealer = random.choice(self.Table_order)
         self.number_of_round = 0
+        self.nb_player = len(self.Players)
 
     def add_player(self, player_name, initial_stack, is_human):
         new_player = Player(player_name, initial_stack, is_human=is_human)
@@ -306,15 +307,18 @@ class Table():
         Done = False
         while not Done:
             dealer_pos = self.Table_order.index(self.dealer)
-            dealer_pos += 1
+            dealer_pos = (dealer_pos + 1) % self.nb_player
             self.dealer = self.Table_order[dealer_pos]
-            if self.dealer.stack != 0:
+            if self.dealer.stack > 0:
                 Done = True
 
     def update_between_round(self):
         nb_round_to_upgrade = self.blind_rule[0]
-        if (self.number_of_round + 1) // nb_round_to_upgrade > self.number_of_round // nb_round_to_upgrade:
-            self.blind *= self.blind
+        blind_multiplicator = self.blind_rule[1]
+        if (self.number_of_round + 1) // nb_round_to_upgrade == (self.number_of_round // nb_round_to_upgrade) + 1:
+            self.blind *= blind_multiplicator
+            for player in self.Players:
+                object.__setattr__(player, 'stack', player.stack / blind_multiplicator)
         self.number_of_round += 1
         self.change_dealer()
 
@@ -327,7 +331,7 @@ class Round():
     def __init__(self, poker_table):
         self.table = poker_table
         self.active_players = [player for player in self.table.Table_order if player.stack > 0]
-        self.dealer = self.table.dealer
+        self.dealer = self.table.dealer  # s'assurer qu'il a bien un stack positif et qu'il est donc présent dans le round
         self.dealer_pos = self.active_players.index(self.dealer)
         self.pot = 0
         self.minimal_bid = 0
