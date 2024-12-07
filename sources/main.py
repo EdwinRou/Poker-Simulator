@@ -217,6 +217,7 @@ class PlayerState(Enum):
     WAITING = auto()
     IN_HAND = auto()
     FOLDED = auto()
+    ALL_IN = auto()
 
 
 @dataclass(eq=False, frozen=True)
@@ -224,7 +225,8 @@ class Player:
     id: str
     stack: float = 0.0
     state: PlayerState = PlayerState.WAITING
-    current_bet: float = 0.0
+    round_bet: float = 0.0
+    phase_bet: float = 0.0
     hand: List[Card] = None
     is_human: bool = False
 
@@ -240,9 +242,14 @@ class Player:
         if amount > self.stack:
             print(f"Erreur : la mise d'un montant {amount} est supérieure au stack égal à {self.stack}")
             return None
-        object.__setattr__(self, 'current_bet', self.current_bet + amount)
-        object.__setattr__(self, 'stack', self.stack - amount)
-        object.__setattr__(self, 'state', PlayerState.IN_HAND)
+        if amount < self.stack:
+            object.__setattr__(self, 'phase_bet', self.phase_bet + amount)
+            object.__setattr__(self, 'stack', self.stack - amount)
+            object.__setattr__(self, 'state', PlayerState.IN_HAND)
+        if amount == self.stack:
+            object.__setattr__(self, 'phase_bet', self.phase_bet + amount)
+            object.__setattr__(self, 'stack', 0)
+            object.__setattr__(self, 'state', PlayerState.ALL_IN)
 
         self.unittest_bet(amount)
 
@@ -258,25 +265,37 @@ class Player:
         assert self.state == PlayerState.FOLDED, "Player state did not change to FOLDED"
         print("Player fold unittest passed.")
 
+    def all_in(self):
+        self.bet(self.stack)
+
     def get_action(self, current_bet):
-        action = random.choice(["Fold", "Call", "All in"])
+        action = random.choice(["Fold", "Call", "All_in"])
         if action == "Fold":
             self.fold()
         elif action == "Call":
             self.bet(current_bet)
-        elif action == "All in":
-            self.bet(self.stack)
+        elif action == "All_in":
+            self.all_in()
         return action
 
-    def reset(self):
+    def reset_round(self):
         object.__setattr__(self, 'state', PlayerState.WAITING)
-        object.__setattr__(self, 'current_bet', 0.0)
+        object.__setattr__(self, 'phase_bet', 0.0)
+        object.__setattr__(self, 'round_bet', 0.0)
+        object.__setattr__(self, 'hand', [])
         self.unittest_reset()
 
     def unittest_reset(self):
         assert self.state == PlayerState.WAITING, "Player state not reset to WAITING"
         assert self.current_bet == 0, "Current bet not reset to 0"
+        assert self.hand == [], "Current hand not emptied"
         print("Player reset unittest passed.")
+
+    def reset_phase(self):
+        object.__setattr__(self, 'round_bet', self.phase_bet)
+        object.__setattr__(self, 'phase_bet', 0.0)
+        if self.state != PlayerState.FOLDED:
+            object.__setattr__(self, 'state', PlayerState.WAITING)
 
 
 class Poker_Game:  # useless atm
@@ -331,7 +350,7 @@ class Round():
     def __init__(self, poker_table):
         self.table = poker_table
         self.active_players = [player for player in self.table.Table_order if player.stack > 0]
-        self.dealer = self.table.dealer  # s'assurer qu'il a bien un stack positif et qu'il est donc présent dans le round
+        self.dealer = self.table.dealer  # s'assurer qu'il a bien un stack positif/qu'il est dans le round
         self.dealer_pos = self.active_players.index(self.dealer)
         self.pot = 0
         self.minimal_bid = 0
@@ -340,7 +359,7 @@ class Round():
         self.deck = Deck()
         self.nb_player = len(self.active_players)
         for player in self.active_players:
-            player.reset()
+            player.reset_round()
 
     def deal_hands(self):
         for player in self.active_players:
@@ -366,7 +385,7 @@ class Round():
     def player_action(self, player):
         player.get_action(self.current_bet)
 
-    def betting_round(self, starting_position):
+    def betting_round(self, starting_position):  # used during each phase ie Preflop, Flop etc
         Done = False
         pos_player_to_speak = starting_position
         while not Done:
@@ -405,18 +424,18 @@ class Round():
     def showdown(self):
         showdown_players = [player for player in self.active_players if player.State != PlayerState.FOLDED]
         hands = [player.hand for player in showdown_players]
-        positions_winner = decide_winner(self.board, hands)
-        if len(positions_winner) == 1:
-            pos_winner = positions_winner[0]
+        positions_winners = decide_winner(self.board, hands)
+        if len(positions_winners) == 1:
+            pos_winner = positions_winners[0]
             winner = showdown_players[pos_winner]
             winner.stack += self.pot
-            print(f"Player {winner} won showdown and all the pot of value {self.pot} blind")
-        if len(positions_winner) >= 1:
-            winners = [showdown_players[pos] for pos in positions_winner]
-            shared_pot = self.pot / len(positions_winner)
+            print(f"Player {winner} won showdown and all the pot of value {self.pot} blinds")
+        if len(positions_winners) >= 1:
+            winners = [showdown_players[pos] for pos in positions_winners]
+            shared_pot = self.pot / len(positions_winners)
             for winner in winners:
                 winner.stack += shared_pot
-            print(f"Players {winners} had equal hand and each won {shared_pot} blind")
+            print(f"Players {winners} had equal hand and each won {shared_pot} blind(s)")
 
     def play_round(self):
         self.play_preflop()
