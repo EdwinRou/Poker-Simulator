@@ -17,8 +17,38 @@ class Deck:
         self.cards = [Card(suit, rank) for suit in suits for rank in ranks]
         random.shuffle(self.cards)
 
+        self.unittest_init_deck()
+
+    def unittest_init_deck(self):
+        # Assert the total number of cards is 52
+        assert len(self.cards) == 52, "Deck should contain 52 cards after initialization"
+
+        # Assert each suit has 13 cards
+        suit_count = {suit: 0 for suit in ['Hearts', 'Diamonds', 'Clubs', 'Spades']}
+        for card in self.cards:
+            suit_count[card.suit] += 1
+        for suit, count in suit_count.items():
+            assert count == 13, f"Suit '{suit}' should have 13 cards, but has {count}"
+
+        # Assert each rank has 4 cards
+        rank_count = {rank: 0 for rank in
+                      ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace']}
+        for card in self.cards:
+            rank_count[card.rank] += 1
+        for rank, count in rank_count.items():
+            assert count == 4, f"Rank '{rank}' should have 4 cards, but has {count}"
+
+        print("Deck initialization unittest passed: all suits and ranks have the correct number of cards.")
+
     def deal(self, num_cards):
-        return [self.cards.pop() for i in range(num_cards)]
+        dealt_cards = [self.cards.pop() for _ in range(num_cards)]
+        self.unittest_deal_cards(num_cards, dealt_cards)
+        return dealt_cards
+
+    def unittest_deal_cards(self, num_cards, dealt_cards):
+        assert len(dealt_cards) == num_cards, "Incorrect number of cards dealt"
+        assert len(self.cards) == 52 - num_cards, "Deck size did not decrease correctly"
+        print(f"Deck deal unittest passed for {num_cards} cards.")
 
 
 def best_combination(hand, board):
@@ -60,8 +90,21 @@ class Player:
         object.__setattr__(self, 'stack', self.stack - amount)
         object.__setattr__(self, 'state', PlayerState.IN_HAND)
 
+        self.unittest_bet(amount)
+
+    def unittest_bet(self, amount):
+        assert self.stack >= 0, "Stack cannot be negative after a bet"
+        print("Player bet unittest passed.")
+
+
     def fold(self):
         object.__setattr__(self, 'state', PlayerState.FOLDED)
+        self.unittest_fold()
+
+    def unittest_fold(self):
+        assert self.state == PlayerState.FOLDED, "Player state did not change to FOLDED"
+        print("Player fold unittest passed.")
+
 
     def get_action(self, current_bet):
         action = random.choice(["Fold", "Call", "All in"])
@@ -76,6 +119,12 @@ class Player:
     def reset(self):
         object.__setattr__(self, 'state', PlayerState.WAITING)
         object.__setattr__(self, 'current_bet', 0.0)
+        self.unittest_reset()
+
+    def unittest_reset(self):
+        assert self.state == PlayerState.WAITING, "Player state not reset to WAITING"
+        assert self.current_bet == 0, "Current bet not reset to 0"
+        print("Player reset unittest passed.")
 
 
 class Poker_Game:  # useless atm
@@ -141,6 +190,12 @@ class Round():
         for player in self.active_players:
             new_hand = self.deck.deal(2)
             object.__setattr__(player, 'hand', new_hand)
+        self.unittest_deal_hands()
+
+    def unittest_deal_hands(self):
+        for player in self.active_players:
+            assert len(player.hand) == 2, f"Player {player.id} did not receive 2 cards"
+        print("Round deal hands unittest passed.")
 
     def bet_blinds(self):
         self.dealer.bet(0.5)
