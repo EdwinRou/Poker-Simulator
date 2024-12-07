@@ -2,6 +2,9 @@ from enum import Enum, auto
 from dataclasses import dataclass
 from typing import List
 import random
+from dataclasses import dataclass
+import random
+from itertools import combinations
 
 
 @dataclass
@@ -20,13 +23,163 @@ class Deck:
     def deal(self, num_cards):
         return [self.cards.pop() for i in range(num_cards)]
 
+# Poker hand rank order
+RANK_ORDER = {'2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9,
+              '10': 10, 'Jack': 11, 'Queen': 12, 'King': 13, 'Ace': 14}
+
+def rank_value(card):
+    return RANK_ORDER[card.rank]
+
+def evaluate_hand(cards):
+    """
+    Evaluates a 5-card poker hand and returns a tuple that can be used to compare hands.
+    The tuple structure:
+    (hand_rank, primary_values, kicker_values)
+    Higher is better. `hand_rank` is an integer representing the category of the hand:
+    - 0: High Card
+    - 1: Pair
+    - 2: Two Pair
+    - 3: Three of a Kind
+    - 4: Straight
+    - 5: Flush
+    - 6: Full House
+    - 7: Four of a Kind
+    - 8: Straight Flush
+    (Royal Flush is just the top Straight Flush)
+    """
+    # Sort cards by rank descending
+    sorted_cards = sorted(cards, key=rank_value, reverse=True)
+    ranks = [rank_value(c) for c in sorted_cards]
+    suits = [c.suit for c in sorted_cards]
+
+    # Count occurrences of each rank
+    rank_counts = {}
+    for r in ranks:
+        rank_counts[r] = rank_counts.get(r, 0) + 1
+
+    # Sort by frequency and then by rank
+    # This helps for identifying pairs, three-of-a-kinds, etc.
+    freq_sorted = sorted(rank_counts.items(), key=lambda x: (x[1], x[0]), reverse=True)
+
+    is_flush = len(set(suits)) == 1
+
+    # Check for straight:
+    # Special case: Ace can be low if we have A, 2, 3, 4, 5
+    def is_straight(ranks_list):
+        # ranks_list is sorted descending. Check sequences:
+        if len(set(ranks_list)) != 5:
+            return False
+        # Normal straight check
+        for i in range(4):
+            if ranks_list[i] - 1 != ranks_list[i+1]:
+                break
+        else:
+            # It's a straight
+            return True
+        # Check Ace-low straight: A=14, and we have 5,4,3,2
+        # which would look like [14,5,4,3,2]
+        if set(ranks_list) == {14, 5, 4, 3, 2}:
+            return True
+        return False
+
+    straight = is_straight(ranks)
+
+    # Determine straight's high card (account for A-5 straight)
+    def straight_high_card(ranks_list):
+        if set(ranks_list) == {14, 5, 4, 3, 2}:
+            return 5  # A-5 straight high is 5
+        return ranks_list[0]
+
+    # Construct the evaluation
+    # We know freq_sorted is sorted by count and then rank
+    counts = [item[1] for item in freq_sorted]
+    # Identify patterns
+    if straight and is_flush:
+        # Straight Flush or Royal Flush
+        high = straight_high_card(ranks)
+        # highest straight flush (A-high) is basically a royal flush,
+        # but we just treat it as a straight flush with highest rank.
+        return (8, [high], [])
+
+    elif 4 in counts:
+        # Four of a Kind
+        # freq_sorted[0] is the four-of-a-kind rank
+        four_rank = freq_sorted[0][0]
+        kicker = [r for r in ranks if r != four_rank]
+        return (7, [four_rank], kicker)
+
+    elif 3 in counts and 2 in counts:
+        # Full House
+        three_rank = freq_sorted[0][0]
+        two_rank = freq_sorted[1][0]
+        return (6, [three_rank, two_rank], [])
+
+    elif is_flush:
+        # Flush
+        # Sort by rank
+        return (5, ranks, [])
+
+    elif straight:
+        # Straight
+        high = straight_high_card(ranks)
+        return (4, [high], [])
+
+    elif 3 in counts:
+        # Three of a Kind
+        three_rank = freq_sorted[0][0]
+        kickers = [r for r in ranks if r != three_rank]
+        return (3, [three_rank], kickers)
+
+    elif counts.count(2) == 2:
+        # Two Pair
+        pair_ranks = [x[0] for x in freq_sorted if x[1] == 2]
+        kicker = [x for x in ranks if x not in pair_ranks]
+        # pair_ranks are already sorted descending by the freq_sorted logic
+        return (2, pair_ranks, kicker)
+
+    elif 2 in counts:
+        # One Pair
+        pair_rank = freq_sorted[0][0]
+        kickers = [r for r in ranks if r != pair_rank]
+        return (1, [pair_rank], kickers)
+
+    else:
+        # High Card
+        # Just ranks in descending order
+        return (0, ranks, [])
 
 def best_combination(hand, board):
-    return None
+    # hand: 2 cards, board: 5 cards
+    # We have 7 cards total. Choose best 5-card combo.
+    all_cards = hand + board
+    best = None
+    for combo in combinations(all_cards, 5):
+        score = evaluate_hand(combo)
+        if best is None or score > best[0]:
+            best = (score, combo)
+    # Return the best 5-card combination
+    return best[1]
 
 
 def decide_winner(board, hands):
-    return None
+    # Evaluate each player's best hand
+    best_results = []
+    for i, hand in enumerate(hands):
+        best_5 = best_combination(hand, board)
+        score = evaluate_hand(best_5)
+        best_results.append((score, i, best_5))
+
+    # Sort results by score descending
+    best_results.sort(key=lambda x: x[0], reverse=True)
+
+    # The top score is the score of the best hand
+    top_score = best_results[0][0]
+
+    # Find all players who share that top score
+    winners = [res[1] for res in best_results if res[0] == top_score]
+
+    return winners
+
 
 
 class PlayerState(Enum):
