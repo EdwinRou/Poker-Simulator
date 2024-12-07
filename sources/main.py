@@ -51,6 +51,14 @@ class Deck:
         print(f"Deck deal unittest passed for {num_cards} cards.")
 
 
+def best_combination(hand, board):
+    return None
+
+
+def decide_winner(board, hands):
+    return None
+
+
 class PlayerState(Enum):
     WAITING = auto()
     IN_HAND = auto()
@@ -64,6 +72,7 @@ class Player:
     state: PlayerState = PlayerState.WAITING
     current_bet: float = 0.0
     hand: List[Card] = None
+    is_human: bool = False
 
     def __eq__(self, other):
         if not isinstance(other, Player):
@@ -77,9 +86,9 @@ class Player:
         if amount > self.stack:
             print(f"Erreur : la mise d'un montant {amount} est supérieure au stack égal à {self.stack}")
             return None
-        self.current_bet += amount
-        self.stack -= amount
-        self.state = PlayerState.IN_HAND
+        object.__setattr__(self, 'current_bet', self.current_bet + amount)
+        object.__setattr__(self, 'stack', self.stack - amount)
+        object.__setattr__(self, 'state', PlayerState.IN_HAND)
 
         self.unittest_bet(amount)
 
@@ -89,12 +98,13 @@ class Player:
 
 
     def fold(self):
-        self.state = PlayerState.FOLDED
+        object.__setattr__(self, 'state', PlayerState.FOLDED)
         self.unittest_fold()
 
     def unittest_fold(self):
         assert self.state == PlayerState.FOLDED, "Player state did not change to FOLDED"
         print("Player fold unittest passed.")
+
 
     def get_action(self, current_bet):
         action = random.choice(["Fold", "Call", "All in"])
@@ -107,15 +117,13 @@ class Player:
         return action
 
     def reset(self):
-        self.state = PlayerState.WAITING
-        self.current_bet = 0
-        self.hand = []
+        object.__setattr__(self, 'state', PlayerState.WAITING)
+        object.__setattr__(self, 'current_bet', 0.0)
         self.unittest_reset()
 
     def unittest_reset(self):
         assert self.state == PlayerState.WAITING, "Player state not reset to WAITING"
         assert self.current_bet == 0, "Current bet not reset to 0"
-        assert self.hand == [], "Hand not reset"
         print("Player reset unittest passed.")
 
 
@@ -127,26 +135,36 @@ class Poker_Game:  # useless atm
 
 class Table():
 
-    def __init__(self, players_names, initial_blind, blind_rule, initial_stack):
-
-        self.Players = {Player(player_name, initial_stack) for player_name in players_names}
+    def __init__(self, players_names_and_type, initial_blind, blind_rule, initial_stack):
+        # player_names_and_type: [(name, is_human), (name, is_human)]
+        self.Players = {Player(name, initial_stack, is_human=is_human) for name, is_human in players_names_and_type}
         self.Table_order = [players for players in self.Players]
         random.shuffle(self.table_order)
         self.blind = initial_blind
         self.blind_rule = blind_rule
         self.dealer = random.choice(self.Table_order)
         self.number_of_round = 0
-        self.nb_player = len(self.Table_order)
 
-    def add_player(self, player_name, initial_stack):
-        new_player = Player(player_name, initial_stack)
+    def add_player(self, player_name, initial_stack, is_human):
+        new_player = Player(player_name, initial_stack, is_human=is_human)
         self.Players.add(new_player)
         self.Table_order.append(new_player)
 
+    def change_dealer(self):
+        Done = False
+        while not Done:
+            dealer_pos = self.Table_order.index(self.dealer)
+            dealer_pos += 1
+            self.dealer = self.Table_order[dealer_pos]
+            if self.dealer.stack != 0:
+                Done = True
+
     def update_between_round(self):
+        nb_round_to_upgrade = self.blind_rule[0]
+        if (self.number_of_round + 1) // nb_round_to_upgrade > self.number_of_round // nb_round_to_upgrade:
+            self.blind *= self.blind
         self.number_of_round += 1
-        # index = self.Table_order.index(self.dealer)
-        # dealer = self.Table_order[(index + 1) % self.nb_player]
+        self.change_dealer()
 
     def reset_position(self):
         random.shuffle(self.Table_order)
@@ -170,7 +188,8 @@ class Round():
 
     def deal_hands(self):
         for player in self.active_players:
-            player.hand = self.deck.deal(2)
+            new_hand = self.deck.deal(2)
+            object.__setattr__(player, 'hand', new_hand)
         self.unittest_deal_hands()
 
     def unittest_deal_hands(self):
@@ -182,6 +201,7 @@ class Round():
         self.dealer.bet(0.5)
         pos_grosse = (self.dealer_pos + 1) % self.nb_player
         self.active_players[pos_grosse].bet(1)
+        self.current_bet = 1
         self.pot += 1.5
 
     def draw_flop(self):
@@ -190,11 +210,9 @@ class Round():
     def player_action(self, player):
         player.get_action(self.current_bet)
 
-    def play_preflop(self):
-        self.deal_hands()
-        self.bet_blinds()
-        pos_player_to_speak = (self.dealer_pos + 2) % self.nb_player
+    def betting_round(self, starting_position):
         Done = False
+        pos_player_to_speak = starting_position
         while not Done:
             current_player = self.active_players[pos_player_to_speak]
             if current_player.state == PlayerState.FOLDED:
@@ -203,21 +221,42 @@ class Round():
                 Done = True
                 pass
             elif current_player.state == PlayerState.WAITING:
-                self.player_action(current_player)
+                action = self.player_action(current_player)
+                print(f"Player {current_player} played {action}")
             pos_player_to_speak = (pos_player_to_speak + 1) % self.nb_player
-        pass
+
+    def play_preflop(self):
+        self.deal_hands()
+        self.bet_blinds()
+        pos_player_to_speak = (self.dealer_pos + 2) % self.nb_player
+        self.betting_round(pos_player_to_speak)
 
     def play_flop(self):
         self.draw_flop()
+        pos_player_to_speak = self.dealer_pos % self.nb_player
+        self.betting_round(pos_player_to_speak)
 
     def play_turn(self):
         self.board += self.deck.draw(1)
+        pos_player_to_speak = self.dealer_pos % self.nb_player
+        self.betting_round(pos_player_to_speak)
 
     def play_river(self):
-        pass
+        self.board += self.deck.draw(1)
+        pos_player_to_speak = self.dealer_pos % self.nb_player
+        self.betting_round(pos_player_to_speak)
+
+    def showdown(self):
+        showdown_players = [player for player in self.active_players if player.State != PlayerState.FOLDED]
+        hands = [player.hand for player in showdown_players]
+        pos_winner, winning_combination = decide_winner(self.board, hands)
+        winner = showdown_players[pos_winner]
+        winner.stack += self.pot
+        print(f"Player {winner} won showdown with {winning_combination}")
 
     def play_round(self):
         self.play_preflop()
         self.play_flop()
         self.play_turn()
         self.play_river()
+        self.showdown()
