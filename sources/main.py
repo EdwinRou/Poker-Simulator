@@ -2,8 +2,6 @@ from enum import Enum, auto
 from dataclasses import dataclass
 from typing import List
 import random
-from dataclasses import dataclass
-import random
 from itertools import combinations
 
 
@@ -53,12 +51,15 @@ class Deck:
         assert len(self.cards) == 52 - num_cards, "Deck size did not decrease correctly"
         print(f"Deck deal unittest passed for {num_cards} cards.")
 
+
 # Poker hand rank order
 RANK_ORDER = {'2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9,
               '10': 10, 'Jack': 11, 'Queen': 12, 'King': 13, 'Ace': 14}
 
+
 def rank_value(card):
     return RANK_ORDER[card.rank]
+
 
 def evaluate_hand(cards):
     """
@@ -178,6 +179,7 @@ def evaluate_hand(cards):
         # Just ranks in descending order
         return (0, ranks, [])
 
+
 def best_combination(hand, board):
     # hand: 2 cards, board: 5 cards
     # We have 7 cards total. Choose best 5-card combo.
@@ -209,7 +211,6 @@ def decide_winner(board, hands):
     winners = [res[1] for res in best_results if res[0] == top_score]
 
     return winners
-
 
 
 class PlayerState(Enum):
@@ -249,7 +250,6 @@ class Player:
         assert self.stack >= 0, "Stack cannot be negative after a bet"
         print("Player bet unittest passed.")
 
-
     def fold(self):
         object.__setattr__(self, 'state', PlayerState.FOLDED)
         self.unittest_fold()
@@ -257,7 +257,6 @@ class Player:
     def unittest_fold(self):
         assert self.state == PlayerState.FOLDED, "Player state did not change to FOLDED"
         print("Player fold unittest passed.")
-
 
     def get_action(self, current_bet):
         action = random.choice(["Fold", "Call", "All in"])
