@@ -286,7 +286,7 @@ class Player:
     def reset_phase(self):
         object.__setattr__(self, 'round_bet', self.phase_bet)
         object.__setattr__(self, 'phase_bet', 0.0)
-        if self.state != PlayerState.FOLDED:
+        if self.state == PlayerState.IN_HAND:
             object.__setattr__(self, 'state', PlayerState.WAITING)
 
 
@@ -422,13 +422,13 @@ class Round():
         while not Done:
             current_player = self.active_players[pos_player_to_speak]
             if current_player.state == PlayerState.FOLDED:
-                pass
+                continue
             elif current_player.state == PlayerState.IN_HAND:
                 Done = True
-                pass
+                continue
             elif current_player.state == PlayerState.WAITING:
                 if current_player.stack == 0:  # means he is already all_in
-                    pass
+                    continue
                 action = self.player_action(current_player)
                 print(f"Player {current_player} played {action}")
                 print(f"The minimum bet is now of {self.current_bet}")
@@ -441,21 +441,39 @@ class Round():
         self.bet_blinds()
         pos_player_to_speak = (self.dealer_pos + 2) % self.nb_player
         self.betting_round(pos_player_to_speak)
+        for player in self.active_players:
+            player.reset_phase()
+        self.current_bet = 0
+        if self.number_fold == self.nb_player - 1:
+            return True
 
     def play_flop(self):
         self.draw_flop()
         pos_player_to_speak = self.dealer_pos
         self.betting_round(pos_player_to_speak)
+        for player in self.active_players:
+            player.reset_phase()
+        self.current_bet = 0
+        if self.number_fold == self.nb_player - 1:
+            return True
 
     def play_turn(self):
         self.board += self.deck.draw(1)
         pos_player_to_speak = self.dealer_pos
         self.betting_round(pos_player_to_speak)
+        for player in self.active_players:
+            player.reset_phase()
+        self.current_bet = 0
+        if self.number_fold == self.nb_player - 1:
+            return True
 
     def play_river(self):
         self.board += self.deck.draw(1)
         pos_player_to_speak = self.dealer_pos
         self.betting_round(pos_player_to_speak)
+        self.current_bet = 0
+        if self.number_fold == self.nb_player - 1:
+            return True
 
     def showdown(self):
         showdown_players = [player for player in self.active_players if player.State != PlayerState.FOLDED]
@@ -474,8 +492,22 @@ class Round():
             print(f"Players {winners} had equal hand and each won {shared_pot} blind(s)")
 
     def play_round(self):
+        self.pot = 0
+        self.current_bet = 0
+        for player in self.active_players:
+            player.reset_round()
         self.play_preflop()
-        self.play_flop()
-        self.play_turn()
-        self.play_river()
-        self.showdown()
+        if self.number_fold < self.nb_player - 1:
+            self.play_flop()
+        if self.number_fold < self.nb_player - 1:
+            self.play_turn()
+        if self.number_fold < self.nb_player - 1:
+            self.play_river()
+        if self.number_fold < self.nb_player - 1:
+            self.showdown()
+        else:
+            for i in range(self.nb_player):
+                if self.active_players[i].state != PlayerState.FOLDED:
+                    winner = self.active_players[i]
+                    break
+            winner.stack += self.pot
