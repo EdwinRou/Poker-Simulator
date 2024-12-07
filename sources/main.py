@@ -268,12 +268,6 @@ class Player:
             action = random.choice(["Fold", "All_in"])
         else:
             action = random.choice(["Fold", "Call", "All_in"])
-        if action == "Fold":
-            self.fold()
-        elif action == "Call":
-            self.bet(current_bet)
-        elif action == "All_in":
-            self.all_in()
         return action
 
     def reset_round(self):
@@ -392,34 +386,35 @@ class Round():
     def player_action(self, player):
         if not player.is_human:
             action = player.random_action(self.current_bet)
-            if action == "Fold":
-                self.number_fold += 1
+        choice = action.strip().lower()[0]
         if player.is_human:
             while True:
                 choice = input("Choose action (f=Fold, c=Call, a=All in): ").strip().lower()
-                if choice not in ['f', 'c', 'a']:
+                if choice in ['f', 'c', 'a']:
                     break
                 print("Invalid choice, try again.")
-
-            if choice == 'f':
-                player.fold()
-                self.number_fold += 1
-            elif choice == 'c':
-                to_call = self.current_bet - player.phase_bet
-                if to_call > 0:
-                    if to_call > player.stack:
-                        # All-in if can't fully call
-                        call_amount = player.stack
-                    else:
-                        call_amount = to_call
-                    self.pot += call_amount
-                    player.bet(call_amount)
-            elif choice == 'a':
-                amount = player.stack
-                self.pot += amount
-                player.bet(amount)
-                if player.current_bet > self.current_bet:
-                    self.current_bet = player.current_bet
+        if choice == 'f':
+            player.fold()
+            self.number_fold += 1
+            return "Fold"
+        elif choice == 'c':
+            to_call = self.current_bet - player.phase_bet
+            if to_call > 0:  # a priori c'est inutile car forcément vérifié
+                if to_call > player.stack:
+                    to_call = player.stack
+                self.pot += to_call
+                player.bet(to_call)
+                return "Call"
+        elif choice == 'a':
+            amount = player.stack
+            self.pot += amount
+            player.bet(amount)
+            if player.phase_bet > self.current_bet:
+                self.current_bet = player.phase_bet
+                for other_player in self.active_players:
+                    if other_player != player and other_player.state == PlayerState.IN_HAND:
+                        object.__setattr__(other_player, 'state', PlayerState.WAITING)
+                return "All_in"
 
     def betting_round(self, starting_position):  # used during each phase ie Preflop, Flop etc
         Done = False
@@ -436,7 +431,10 @@ class Round():
                     pass
                 action = self.player_action(current_player)
                 print(f"Player {current_player} played {action}")
+                print(f"The minimum bet is now of {self.current_bet}")
             pos_player_to_speak = (pos_player_to_speak + 1) % self.nb_player
+            if self.number_fold == self.nb_player - 1:
+                Done = True
 
     def play_preflop(self):
         self.deal_hands()
