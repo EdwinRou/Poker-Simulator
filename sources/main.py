@@ -401,10 +401,18 @@ class Round():
     def showdown(self):
         showdown_players = [player for player in self.active_players if player.State != PlayerState.FOLDED]
         hands = [player.hand for player in showdown_players]
-        pos_winner, winning_combination = decide_winner(self.board, hands)
-        winner = showdown_players[pos_winner]
-        winner.stack += self.pot
-        print(f"Player {winner} won showdown with {winning_combination}")
+        positions_winner = decide_winner(self.board, hands)
+        if len(positions_winner) == 1:
+            pos_winner = positions_winner[0]
+            winner = showdown_players[pos_winner]
+            winner.stack += self.pot
+            print(f"Player {winner} won showdown and all the pot of value {self.pot} blind")
+        if len(positions_winner) >= 1:
+            winners = [showdown_players[pos] for pos in positions_winner]
+            shared_pot = self.pot / len(positions_winner)
+            for winner in winners:
+                winner.stack += shared_pot
+            print(f"Players {winners} had equal hand and each won {shared_pot} blind")
 
     def play_round(self):
         self.play_preflop()
