@@ -39,7 +39,7 @@ class Deck:
         for rank, count in rank_count.items():
             assert count == 4, f"Rank '{rank}' should have 4 cards, but has {count}"
 
-        print("Deck initialization unittest passed: all suits and ranks have the correct number of cards.")
+        #print("Deck initialization unittest passed: all suits and ranks have the correct number of cards.")
 
     def deal(self, num_cards):
         dealt_cards = [self.cards.pop() for _ in range(num_cards)]
@@ -48,7 +48,7 @@ class Deck:
 
     def unittest_deal_cards(self, num_cards, dealt_cards):
         assert len(dealt_cards) == num_cards, "Incorrect number of cards dealt"
-        print(f"Deck deal unittest passed for {num_cards} cards.")
+        #print(f"Deck deal unittest passed for {num_cards} cards.")
 
 
 # Poker hand rank order
@@ -256,7 +256,7 @@ class Player:
 
     def unittest_bet(self, amount):
         assert self.stack >= 0, "Stack cannot be negative after a bet"
-        print("Player bet unittest passed.")
+        #("Player bet unittest passed.")
 
     def fold(self):
         self.state = PlayerState.FOLDED
@@ -264,7 +264,7 @@ class Player:
 
     def unittest_fold(self):
         assert self.state == PlayerState.FOLDED, "Player state did not change to FOLDED"
-        print("Player fold unittest passed.")
+        #print("Player fold unittest passed.")
 
     def all_in(self):
         self.bet(self.stack)
@@ -288,7 +288,7 @@ class Player:
         assert self.state == PlayerState.WAITING, "Player state not reset to WAITING"
         assert self.round_bet == 0, "Current bet not reset to 0"
         assert self.hand == [], "Current hand not emptied"
-        print("Player reset unittest passed.")
+        #print("Player reset unittest passed.")
 
     def reset_phase(self):
         self.round_bet = self.phase_bet
@@ -381,7 +381,7 @@ class Round():
     def unittest_deal_hands(self):
         for player in self.active_players:
             assert len(player.hand) == 2, f"Player {player._id} did not receive 2 cards"
-        print("Round deal hands unittest passed.")
+        #print("Round deal hands unittest passed.")
 
     def display_hands(self):
         for player in self.active_players:
@@ -397,20 +397,28 @@ class Round():
             self.dealer.bet(0.5)
             self.pot += 0.5
             print(f"{self.dealer._id} bets 0.5 blind as the small blind")
+            self.dealer.state = PlayerState.WAITING
         else:
             self.pot += self.dealer.stack
             self.dealer.all_in()
             print(f"{self.dealer._id} is in forced all in because in small blind position")
+            self.dealer.state = PlayerState.IN_HAND
+
         pos_grosse = (self.dealer_pos + 1) % self.nb_player
         if self.active_players[pos_grosse].stack > 1:
             self.pot += 1
             self.active_players[pos_grosse].bet(1)
-            print(f"{self.dealer._id} bets 1 blind as the big blind")
+            big_blind_player = self.active_players[pos_grosse]
+            print(f"{big_blind_player._id} bets 1 blind as the big blind")
+            self.active_players[pos_grosse].state = PlayerState.WAITING
         else:
             self.pot += self.active_players[pos_grosse].stack
             self.active_players[pos_grosse].all_in()
             print(f"{self.dealer._id} is in forced all in because in big blind position")
+            self.active_players[pos_grosse].state = PlayerState.IN_HAND
         self.current_bet = 1
+
+
         print(f"Current pot is now {self.pot}")
 
     def draw_flop(self):
@@ -508,7 +516,7 @@ class Round():
             return True
 
     def play_turn(self):
-        self.board += self.deck.draw(1)
+        self.board += self.deck.deal(1)
         pos_player_to_speak = self.dealer_pos
         self.betting_round(pos_player_to_speak)
         for player in self.active_players:
@@ -526,7 +534,7 @@ class Round():
             return True
 
     def showdown(self):
-        showdown_players = [player for player in self.active_players if player.State != PlayerState.FOLDED]
+        showdown_players = [player for player in self.active_players if player.state != PlayerState.FOLDED]
         hands = [player.hand for player in showdown_players]
         positions_winners = decide_winner(self.board, hands)
         if len(positions_winners) == 1:
@@ -534,7 +542,7 @@ class Round():
             winner = showdown_players[pos_winner]
             winner.stack += self.pot
             print(f"Player {winner._id} won showdown with pot of {self.pot} blinds")
-        if len(positions_winners) >= 1:
+        elif len(positions_winners) > 1:
             winners = [showdown_players[pos] for pos in positions_winners]
             shared_pot = self.pot / len(positions_winners)
             for winner in winners:
@@ -565,7 +573,7 @@ class Round():
                 if self.active_players[i].state != PlayerState.FOLDED:
                     winner = self.active_players[i]
                     break
-            print(f"Player{winner} won the pot of {self.pot} blind(s) because everyone else folded")
+            print(f"Player{winner._id} won the pot of {self.pot} blind(s) because everyone else folded")
             winner.stack += self.pot
 
 
