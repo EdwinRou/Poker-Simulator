@@ -245,11 +245,19 @@ class Player:
         if amount > self.stack:
             print(f"Erreur : la mise d'un montant {amount} est supérieure au stack égal à {self.stack}")
             return None
-        if amount < self.stack:
+        if amount <= self.stack:
             self.phase_bet += amount
             self.stack -= amount
             self.state = PlayerState.IN_HAND
         self.unittest_bet(amount)
+
+    def bet_blind(self, amount):  # does not change the state of player
+        if amount > self.stack:
+            print(f"Erreur : la mise d'un montant {amount} est supérieure au stack égal à {self.stack}")
+            return None
+        if amount <= self.stack:
+            self.phase_bet += amount
+            self.stack -= amount
 
     def unittest_bet(self, amount):
         assert self.stack >= 0, "Stack cannot be negative after a bet"
@@ -354,15 +362,20 @@ class BettingRound:
         position = starting_position
 
         while not done:
+            if all(p.state != PlayerState.WAITING for p in self.active_players if p.stack > 0):
+                done = True
+
             player = self.active_players[position]
 
             # Skip folded or all-in players
-            if player.state in {PlayerState.FOLDED, PlayerState.IN_HAND} and player.stack == 0:
+            if player.state == PlayerState.FOLDED or player.stack == 0:
                 position = (position + 1) % player_count
                 continue
 
+            self.log_phase_state(player)
             print(f"Waiting for {player._id} to act. Current bet: {self.current_bet}")
             action = self.player_decision(player)
+            # print(f"{player._id} chose {action}")
             if action == "Fold":
                 self.number_folded += 1
 
@@ -371,8 +384,6 @@ class BettingRound:
                 break
 
             position = (position + 1) % player_count
-            if all(p.state != PlayerState.WAITING for p in self.active_players if p.stack > 0):
-                done = True
 
         print(f"Betting round complete. Pot: {self.pot}, Current Bet: {self.current_bet}")
 
@@ -408,7 +419,7 @@ class BettingRound:
         if action == "c":
             _, self.pot = PlayerActions.call(player, to_call, self.pot)
             print(f"{player._id} called by betting {to_call}.")
-            self.log_game_state()
+
             return "Call"
 
         if action == "r":
@@ -422,26 +433,34 @@ class BettingRound:
             _, self.current_bet, self.pot = PlayerActions.raise_bet(player, raise_amount, self.current_bet, self.pot,
                                                                     self.active_players)
             print(f"{player._id} raised to {self.current_bet}.")
-            self.log_game_state()
             return "Raise"
 
         if action == "a":
-            _, self.current_bet, self.pot = PlayerActions.all_in(player, self.current_bet, self.pot, self.active_players)
+            _, self.current_bet, self.pot = (
+                                    PlayerActions.all_in(player, self.current_bet, self.pot, self.active_players)
+                                            )
             print(f"{player._id} went All-in with {player.phase_bet}.")
-            self.log_game_state()
-            return "All-in"
+            return "All-in"     
 
-    def log_game_state(self):
+    def log_phase_state(self, player):
         """
-        Logs the current state of the game.
+        Logs the current state of the phase to provide players with essential information
+        before making their action.
         """
-        print("\n--- Current Game State ---")
+        print("\n--- Phase State ---")
         print(f"Pot Size: {self.pot}")
-        print(f"Current Bet: {self.current_bet}")
-        for player in self.active_players:
-            status = "Folded" if player.state == PlayerState.FOLDED else "In-Hand"
-            print(f"Player {player._id}: Stack={player.stack}, Bet={player.phase_bet}, Status={status}")
-        print("--------------------------\n")
+        print(f"Current Bet to Call: {self.current_bet}")
+        print(f"{player._id}'s Turn")
+        print(f"{player._id} Stack: {player.stack}")
+        print(f"{player._id} Current Bet: {player.phase_bet}")
+        board_state = ", ".join(f"{card.rank} of {card.suit}" for card in player.hand)
+        print(f"{player._id}'s Hand: {board_state}")
+        print("Other Players:")
+        for p in self.active_players:
+            if p != player:
+                status = "Folded" if p.state == PlayerState.FOLDED else "In-Hand"
+                print(f"  {p._id}: Stack={p.stack}, Bet={p.phase_bet}, Status={status}")
+        print("---------------------\n")
 
 
 class Poker_Game:  # useless atm
@@ -467,6 +486,20 @@ class Table():
         print(f"The initial blind is {self.blind}")
         print(f"Each player has {initial_stack} blinds to begin the game")
         print(f"Each {blind_rule[0]} rounds, the blind will be multiplied by {self.blind_rule[1]}")
+
+    def log_game_state(self):
+        """
+        Logs the state of the game between rounds, including player stacks, blinds,
+        and dealer position.
+        """
+        print("\n=== Game State ===")
+        print(f"Blind: {self.blind}")
+        print(f"Dealer: {self.dealer._id}")
+        print("Players:")
+        for player in self.Table_order:
+            status = "Out of Game" if player.stack <= 0 else "In Game"
+            print(f"  {player._id}: Stack={player.stack}, Status={status}")
+        print("===================\n")
 
     def add_player(self, player_name, initial_stack, is_human):
         new_player = Player(player_name, initial_stack, is_human=is_human)
@@ -519,6 +552,22 @@ class Round():
         # print(f"The dealer is {self.dealer._id}")
         print(f"New round starting with {len(self.active_players)} players")
 
+    def log_round_state(self):
+        """
+        Logs the current state of the round, including active players, pot size,
+        current bet, and the board.
+        """
+        print("\n--- Round State ---")
+        print(f"Pot Size: {self.pot}")
+        print(f"Current Bet: {self.current_bet}")
+        board_state = ", ".join(f"{card.rank} of {card.suit}" for card in self.board)
+        print(f"Board: {board_state if self.board else 'No cards on the board yet'}")
+        print("Players:")
+        for player in self.active_players:
+            status = "Folded" if player.state == PlayerState.FOLDED else "In-Hand"
+            print(f"  {player._id}: Stack={player.stack}, Bet={player.phase_bet}, Status={status}")
+        print("--------------------\n")
+
     def deal_hands(self):
         for player in self.active_players:
             player.hand = self.deck.deal(2)
@@ -551,13 +600,13 @@ class Round():
         if small_blind_player.stack <= small_blind_amount:
             # Small blind player is all-in
             small_blind_contribution = small_blind_player.stack
-            small_blind_player.stack = 0
+            small_blind_player.bet_blind(small_blind_contribution)
             self.pot += small_blind_contribution
             print(f"{small_blind_player._id} is all-in with {small_blind_contribution} as the small blind")
         else:
             # Normal small blind bet
             small_blind_contribution = small_blind_amount
-            small_blind_player.stack -= small_blind_contribution
+            small_blind_player.bet_blind(small_blind_contribution)
             self.pot += small_blind_contribution
             print(f"{small_blind_player._id} posts {small_blind_contribution} as the small blind")
 
@@ -567,13 +616,13 @@ class Round():
         if big_blind_player.stack <= big_blind_amount:
             # Big blind player is all-in
             big_blind_contribution = big_blind_player.stack
-            big_blind_player.stack = 0
+            big_blind_player.bet_blind(big_blind_contribution)
             self.pot += big_blind_contribution
             print(f"{big_blind_player._id} is all-in with {big_blind_contribution} as the big blind")
         else:
             # Normal big blind bet
             big_blind_contribution = big_blind_amount
-            big_blind_player.stack -= big_blind_contribution
+            big_blind_player.bet_blind(big_blind_contribution)
             self.pot += big_blind_contribution
             print(f"{big_blind_player._id} posts {big_blind_contribution} as the big blind")
 
@@ -592,6 +641,7 @@ class Round():
         self.number_fold = betting_round.number_folded
 
     def play_preflop(self):
+        self.log_round_state()
         print("Starting Pre-Flop")
         self.deal_hands()
         self.display_hands()
@@ -601,6 +651,7 @@ class Round():
         self.reset_phase()
 
     def play_flop(self):
+        self.log_round_state()
         print("Starting Flop")
         self.board += self.deck.deal(3)
         self.display_board()
@@ -608,6 +659,7 @@ class Round():
         self.reset_phase()
 
     def play_turn(self):
+        self.log_round_state()
         print("Starting Turn")
         self.board += self.deck.deal(1)
         self.display_board()
@@ -615,6 +667,7 @@ class Round():
         self.reset_phase()
 
     def play_river(self):
+        self.log_round_state()
         print("Starting River")
         self.board += self.deck.deal(1)
         self.display_board()
@@ -679,6 +732,7 @@ def main():
 
     # Continue playing until one player is out of chips
     while True:
+        table.log_game_state()
         game_round = Round(table)
         game_round.play_round()
         table.update_between_round()
