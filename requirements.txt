@@ -1,1 +1,4 @@
-numpy
+random
+itertools
+dataclasses
+enum
