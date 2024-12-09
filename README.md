@@ -1,123 +1,116 @@
-# Poker-Simulator
+# Poker Game Simulator
 
-## Architecture
-`sources`
+Welcome to the **Poker Game Simulator**, a Python-based program designed to simulate a poker game with support for betting, player actions, and hand evaluation. This project provides a modular structure to handle the complexities of poker gameplay, including card dealing, betting rounds, and determining winners.
 
-`game.py`
-`croupier.py`
-`bot.py`
+---
 
-`class Poker_game`
-`class Table`
-`class Round`  
+## Features
+- **Deck and Card Management**: Automatically shuffles a deck of 52 cards and handles dealing cards to players.
+- **Player States**: Tracks player states such as waiting, in-hand, or folded.
+- **Betting Rounds**: Supports betting phases like pre-flop, flop, turn, and river.
+- **Hand Evaluation**: Determines the best 5-card poker hand for each player using poker hand rankings.
+- **Showdown**: Determines the winner(s) or handles ties in a poker round.
+- **AI Players**: Includes AI-controlled players with random decision-making.
+- **Blind System**: Implements small and big blinds with rules for blind progression over rounds.
 
-Maybe :
-`class player`
-`class croupier`
+---
 
+## Requirements
+- Python 3.8+
+- Standard Python libraries (`random`, `itertools`, `dataclasses`, `enum`)
 
-Convention la valeur des stacks et des mises :
-    - la blinde est l'unité de comptage, et Lorsque la blind augmente, la valeur par unité de blind des joueurs diminue.
+---
 
-Initialisation de la partie : `class Poker_game()`
+## How to Play
 
-paramètres qui doivent être initialisés pour une partie:
-- joueurs : set of `id` (str) : `players = {j_1, j_2, ...}`
-- blind initiale : variable `b > 0`
-- stacks initiaux : dictionnaire `Stacks : { j_i : stack }`
-- règle d'évolution de la blind, tuple (frequence, multiplicateur) : on multiplie la blind tout les x tours de table : 
-`blind_rule = ( number_of_turn, multiplicative_factor)`
+### Starting the Game
+1. Clone the repository and navigate to the project folder.
+2. Run the script:
+   ```bash
+   python poker_game.py
+    ```
+3. By default, the game is set up as a **Heads-Up** (one human player vs. one AI bot).
 
+### Game Rules
+- Each player starts with a fixed number of blinds (`initial_stack`).
+- The game progresses through rounds, with blinds increasing after a set number of rounds.
+- Players take turns betting, calling, raising, or folding based on their cards and the current pot.
+- The last remaining player or the player with the best hand at showdown wins the pot.
 
-class `croupier(Poker_game)` : (?)
-- gère la distirbution des cartes (?)
+---
 
-Initialisation : `class Table(Poker_game)`
+## Game Structure
+1. **Table Initialization**:
+- Players are created with unique IDs and stacks.
+- A random player is assigned as the dealer.
 
-- Créer un ordre aléatoire et fixe dans les joueurs : `table_order = [j_i, ..., j_n]`
-- initialise le joueur dealer : ``dealer_id : str ``
-- initialise `number_of_round : int = 0`
-- initialise un croupier (classe croupier) (?)
+2. **Betting Rounds**:
+- **Pre-Flop**: Players are dealt two cards each.
+- **Flop**: Three community cards are dealt.
+- **Turn**: One additional community card is dealt.
+- **River**: One final community card is dealt.
 
-Mise à jour de la table entre chaque round :
-- met à jour la position du dealer :
-    - dealer_id becomes the next value in `table_order`
-    - if Stacks[dealer_id] == 0 : 
-        on skip ce tour de dealer
-- on indente `number_of_round`
-- on vérifie si la blind doit être augmenté :
-    - freq = blind_rule[0]
-    - multiplicative_factor = blind_rule[1]
-    - number_of_augmentation =  number_of_round % freq
-    - facteur_total = number_of_augmentation * multiplicative_factor
-    - divides all stacks by facteur total
+3. **Showdown**:
+- The best 5-card hand is evaluated for each player still in the game.
+- The winner(s) receive the pot.
 
+4. **Blind System**:
+- Blinds are updated based on a specified rule (e.g., every 10 rounds, blinds increase by 1.5x).
 
-`class round(Table)` :
+5. **End of Game**:
+- The game ends when only one player has chips remaining.
 
-- initialiser `pot : float` à 0
-- initialiser `minimal_bid : float` à 0
+---
 
-- initialise la liste des joueurs actifs dans le round (ceux avec un stack non nul) en gardant l'ordre des joueurs :   
+## Core Classes
 
-`J_round = [joueurs for joueurs in table_order if Stack[joueurs] > 0]`
+### `Card` and `Deck`
+- Manages the standard 52-card deck.
+- Shuffles and deals cards to players.
 
-- dictionnaire : `Round = {joueurs : {état : str , mise_actuelle : float , cartes : tuple} }`
+### `Player`
+- Represents each player, tracking their stack, state, and actions.
+- Supports betting, folding, and resetting between rounds.
 
-- on suit les différentes étapes du jeux : `Step = [Preflop, Flop, Turn, River]`
+### `Table`
+- Manages the game setup, player order, and blind progression.
 
-- desctiption de la variable `état` du dict `Round` : 
-    - `état` is in `{"wait", "in", "fold"}`
-    - durant chaque phase la parole va passer indéfiniment de joueurs en joeurs juesqu'à qu'une condition d'arrêt soit rencontré
-    - au début tout le monde est en "`wait`" car personne n'a parlé
-    - lorsqu'une personne parle, son état passe soit en `"in"` (si `action_joueurs = check or call`), soit en `"fold"`
-    - si quelqu'un `"raise"`, alors tout les joueurs qui ne sont pas `"fold"` passe en `"wait"`
-    - si une personne est en `fold`, on ne lui propose plus jamais de parlé lors du round
-    - si une personne est `wait`, à son tour de parole, on lui demande de parler
-    - si une personne est `in` :
-        - on termine la phase actuelle (flop etc)
-    - use `dealer_id` to retrieve a `dealer_pos_round` 
-    <!-- - si la mise minimale = mise du joueur, on termine la phase du round (preflop, flop etc..)
-    - si la mise minimale > mise du joueur (cela veut dire qu'il y a eu un raise), on propose au joueur de parler à nouveau -->
+### `Round`
+- Orchestrates a complete poker round, from dealing cards to the showdown.
 
+### `BettingRound`
+- Handles individual betting phases within a round.
 
-- Preflop :
+---
 
-    - croupier distribue les cartes aux joueurs : mise à jour des variables `cartes_actuelles` du dict `Round`
-    - `cartes : tuple = (numéro: int, couleur: int)`
-    - on utilise `dealer_id` pour créer `dealer_pos` (position relative aux joueurs dans le round)
-    - petite blind/ grosse blind mise auto :
-        - `id_petite  = dealer_id` et `id _grosse = J_round[dealer_pos + 1]`
-        - stack du joueur petite blinde diminue de 0.5 blind
-        - stack du joueur grosse blind diminue de 1 blind
-        - mise à jour de `Round` pour augmenter `mise_actuelle` à 1.5
-        - `pot = 1.5`
-    - ``minimal_bid = 1 ``
-    - for j > `dealer_pos` + 2 :
-        - if l'état du joueur j est `fold`, pass
-        - if `etat` joueur j est `wait`, mise possible entre minimale actuelle- mise_joueur_j ou fold
-        - if action = fold : 
-            - état joueur j devient fold
-            - check s'il reste plus d'un joueurs actif, sinon on lui ajoute le pot à son stack et on termine le round
-        - if action = call : mise à jour de la mise actuelle joueur j, pot += mise joueur j, etc
-        - if action = raise : pareil + mise à jour mise minimale to raise value
+## Customization
+
+### Adding Players
+You can add more players by modifying the `player_names` in the `main` function:
+`` player_names = [ ("Player1", True), # Human Player ("Bot1", False), # AI Bot ("Bot2", False) # Additional AI Bot ] ``
 
 
-- Flop :
-    - croupier deal 3 cartes visibles par tt le monde
-    - On remet les joueurs qui n'ont pas fold en `état=wait` :
-        Round[players[état]] = wait if Round[players[état]] not fold
-        Round[players[mise actuelle]] = 0
-        mise minimale = 0
-    - for j >  `Dealer_pos` :
-        - on répète le proceess de mises précédent
-- Turn :
-    - croupier révèle 1 cartes visible par tt le monde.
-    - for j > dealer :
-        on répète le proceess de mises précédent
-- River :
-    - croupier révèle 1 cartes visible par tt le monde.
-    - for j > dealer :
-    - on répète le proceess de mises précédent (sans la partie petite grosse)
-    lorsqu'on atteint end_river :
-        - si il y a plus d'un joueurs actifs, alors ils révèlent leurs cartes et le croupier donne un gagnant
+### Adjusting Game Settings
+Modify the following parameters in the `Table` initialization:
+- `initial_blind`: Starting value of the blinds.
+- `blind_rule`: Tuple `(rounds_to_increase, multiplier)` for blind progression.
+- `initial_stack`: Starting stack size for each player.
+
+---
+
+## Testing and Validation
+The code includes several unit tests to ensure core functionality, such as:
+- Validating the deck initialization.
+- Ensuring proper card dealing.
+- Verifying betting logic and player state transitions.
+
+---
+
+## Future Improvements
+- Enhanced AI decision-making based on hand evaluation and pot odds.
+- Support for different poker variations (e.g., Texas Hold'em, Omaha).
+- Online multiplayer functionality.
+
+---
+
+Enjoy your game! 🃏
