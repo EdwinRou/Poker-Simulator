@@ -88,7 +88,7 @@ Welcome to the **Poker Game Simulator**, a Python-based program designed to simu
 ### Adding Players
 You can add more players by modifying the `player_names` in the `main` function:
 ```bash
- player_names = [ ("Player1", True), # Human Player ("Bot1", False), # AI Bot ("Bot2", False) # Additional AI Bot ] ``
+ player_names = [ ("Player1", True), # Human Player ("Bot1", False), # AI Bot ("Bot2", False) # Additional AI Bot ] 
 ```
 
 ### Adjusting Game Settings
