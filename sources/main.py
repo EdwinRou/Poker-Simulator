@@ -363,7 +363,6 @@ class BettingRound:
 
             print(f"Waiting for {player._id} to act. Current bet: {self.current_bet}")
             action = self.player_decision(player)
-            print(f"Player {player.id} choose {action}")
             if action == "Fold":
                 self.number_folded += 1
 
