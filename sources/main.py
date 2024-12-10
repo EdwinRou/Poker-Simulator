@@ -676,12 +676,6 @@ class BettingRound:
         print("---------------------\n")
 
 
-class Poker_Game:  # useless atm
-
-    def __init__(self):
-        pass
-
-
 class Table:
     """
     Represents the poker table, managing players, the dealer, blinds, and round progression.
@@ -1086,6 +1080,5 @@ def main():
             break
 
 
-# Run the game if the script is executed directly
 if __name__ == "__main__":
     main()
