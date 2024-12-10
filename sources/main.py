@@ -530,7 +530,6 @@ class BettingRound:
         active_players (List[Player]): The list of active players in the round.
         pot (float): The current pot size.
         current_bet (float): The current highest bet in the round.
-        number_folded (int): The number of players who have folded.
     """
 
     def __init__(self, active_players, pot, current_bet):
@@ -545,7 +544,6 @@ class BettingRound:
         self.active_players = active_players
         self.pot = pot
         self.current_bet = current_bet
-        self.number_folded = 0
 
     def conduct_round(self, starting_position):
         """
@@ -554,14 +552,19 @@ class BettingRound:
         Args:
             starting_position (int): The index of the player to start the round with.
         """
-        done = False
+
         player_count = len(self.active_players)
         position = starting_position
 
-        while not done:
-            # Check if all players have resolved their actions
+        while True:
+            # check among non all_in players, if everyone has already played
             if all(p.state != PlayerState.WAITING for p in self.active_players if p.stack > 0):
-                done = True
+                break
+
+            # check if there is only player left in the round
+            non_folded_players = [p for p in self.active_players if p.state != PlayerState.FOLDED]
+            if len(non_folded_players) == 1:
+                break
 
             player = self.active_players[position]
 
@@ -572,15 +575,7 @@ class BettingRound:
 
             self.log_phase_state(player)
             print(f"Waiting for {player._id} to act. Current bet: {self.current_bet}")
-            action = self.player_decision(player)
-
-            # Track folds to identify early end of the round
-            if action == "Fold":
-                self.number_folded += 1
-
-            if self.number_folded >= len(self.active_players) - 1:
-                done = True
-                break
+            _ = self.player_decision(player)
 
             # Move to the next player
             position = (position + 1) % player_count
@@ -797,7 +792,6 @@ class Round:
         dealer (Player): The current dealer for the round.
         dealer_pos (int): The position of the dealer in the active players list.
         pot (float): The total pot for the round.
-        number_fold (int): The number of players who have folded.
         current_bet (float): The current highest bet in the round.
         board (List[Card]): The community cards on the table.
         deck (Deck): The deck used for the round.
@@ -816,7 +810,6 @@ class Round:
         self.dealer = self.table.dealer
         self.dealer_pos = self.active_players.index(self.dealer)
         self.pot = 0
-        self.number_fold = 0
         self.current_bet = 0
         self.board = []
         self.deck = Deck()
@@ -927,7 +920,6 @@ class Round:
         betting_round.conduct_round(starting_position)
         self.pot = betting_round.pot
         self.current_bet = betting_round.current_bet
-        self.number_fold = betting_round.number_folded
 
     def play_preflop(self):
         """
@@ -1031,15 +1023,22 @@ class Round:
 
         # Execute each phase of the round
         self.play_preflop()
-        if self.number_fold < self.nb_player - 1:
+
+        non_folded_players = [p for p in self.active_players if p.state != PlayerState.FOLDED]
+        if len(non_folded_players) > 1:
             self.play_flop()
-        if self.number_fold < self.nb_player - 1:
+
+        non_folded_players = [p for p in self.active_players if p.state != PlayerState.FOLDED]
+        if len(non_folded_players) > 1:
             self.play_turn()
-        if self.number_fold < self.nb_player - 1:
+
+        non_folded_players = [p for p in self.active_players if p.state != PlayerState.FOLDED]
+        if len(non_folded_players) > 1:
             self.play_river()
 
         # Determine the winner if more than one player remains
-        if self.number_fold < self.nb_player - 1:
+        non_folded_players = [p for p in self.active_players if p.state != PlayerState.FOLDED]
+        if len(non_folded_players) > 1:
             self.showdown()
         else:
             # If only one player remains, they win by default
@@ -1057,15 +1056,16 @@ def main():
     """
     # Define players (Heads-Up: You vs AI Bot)
     player_names = [
-        ("Edwin", True),  # Human player
-        ("Bot", False)    # AI Bot
+        ("Edwin", False),  # AI Bot
+        ("Thomas", False),    # AI Bot
+        ("Viktor", False)
     ]
 
     # Initialize the poker table
     table = Table(
         players_names_and_type=player_names,
         initial_blind=1,
-        blind_rule=(10, 1.5),  # Increase blinds every 10 rounds by a factor of 1.5
+        blind_rule=(10, 1.5),  # Increase blinds every 10 rounds by a factor of 1.5e
         initial_stack=10       # Each player starts with 10 blinds
     )
 
@@ -1080,5 +1080,6 @@ def main():
             break
 
 
+# Run the game if the script is executed directly
 if __name__ == "__main__":
     main()
