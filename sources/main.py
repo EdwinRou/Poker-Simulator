@@ -1065,7 +1065,7 @@ def main():
     table = Table(
         players_names_and_type=player_names,
         initial_blind=1,
-        blind_rule=(10, 1.5),  # Increase blinds every 10 rounds by a factor of 1.5e
+        blind_rule=(10, 2),  # Increase blinds every 10 rounds by a factor of 1.5e
         initial_stack=10       # Each player starts with 10 blinds
     )
 
