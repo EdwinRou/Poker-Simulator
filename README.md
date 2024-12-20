@@ -1,4 +1,4 @@
-# Poker Game Simulator
+# Poker Game Simulator 🃏
 
 Welcome to the **Poker Game Simulator**, a Python-based program designed to simulate a poker game with support for betting, player actions, and hand evaluation. This project provides a modular structure to handle the complexities of poker gameplay, including card dealing, betting rounds, and determining winners.
 
