@@ -10,7 +10,7 @@ Welcome to the **Poker Game Simulator**, a Python-based program designed to simu
 - **Betting Rounds**: Supports betting phases like pre-flop, flop, turn, and river.
 - **Hand Evaluation**: Determines the best 5-card poker hand for each player using poker hand rankings.
 - **Showdown**: Determines the winner(s) or handles ties in a poker round.
-- **AI Players**: Includes AI-controlled players with random decision-making.
+- **Bot Players**: players with random decision-making.
 - **Blind System**: Implements small and big blinds with rules for blind progression over rounds.
 
 ---
@@ -27,7 +27,7 @@ Welcome to the **Poker Game Simulator**, a Python-based program designed to simu
 1. Clone the repository and navigate to the project folder.
 2. Run the script:
    ```bash
-   python poker_game.py
+   python main.py
     ```
 3. By default, the game is set up as a **Heads-Up** (one human player vs. one AI bot).
 
