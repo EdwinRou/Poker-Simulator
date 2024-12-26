@@ -4,6 +4,17 @@ Welcome to the **Poker Game Simulator**, a Python-based program designed to simu
 
 ---
 
+### Table of Contents
+- [Features](#features)
+- [Requirements](#requirements)
+- [How to Play](#how-to-play)
+- [Game Rules](#game-rules)
+- [Game Structure](#game-structure)
+- [Core Classes](#core-classes)
+- [Customization](#customization)
+- [Testing and Validation](#testing-and-validation)
+- [Future Improvements](#future-improvements)
+
 ## Features
 - **Deck and Card Management**: Automatically shuffles a deck of 52 cards and handles dealing cards to players.
 - **Player States**: Tracks player states such as waiting, in-hand, or folded.
@@ -12,12 +23,14 @@ Welcome to the **Poker Game Simulator**, a Python-based program designed to simu
 - **Showdown**: Determines the winner(s) or handles ties in a poker round.
 - **Bot Players**: players with random decision-making.
 - **Blind System**: Implements small and big blinds with rules for blind progression over rounds.
+- **Docker Support**: Easily run the simulator in a Dockerized environment.
 
 ---
 
 ## Requirements
 - Python 3.8+
 - Standard Python libraries (`random`, `itertools`, `dataclasses`, `enum`)
+- Optional: [Docker](https://www.docker.com/) for containerized execution.
 
 ---
 
@@ -25,13 +38,25 @@ Welcome to the **Poker Game Simulator**, a Python-based program designed to simu
 
 ### Starting the Game
 1. Clone the repository and navigate to the project folder.
-2. Run the script:
+2. **Run Locally**:
    ```bash
-   python main.py
+   python sources/main.py
     ```
-3. By default, the game is set up as a **Heads-Up** (one human player vs. one AI bot).
+3. **Run Using Docker**:
+   - Build the Docker image:
+     ```bash
+     docker build -t poker-simulator .
+     ```
+   - Run the container:
+     ```bash
+     docker run -it poker-simulator
+     ```
 
-### Game Rules
+By default, the game is set up as a **Heads-Up** (one human player vs. one AI bot).
+
+---
+
+## Game Rules
 - Each player starts with a fixed number of blinds (`initial_stack`).
 - The game progresses through rounds, with blinds increasing after a set number of rounds.
 - Players take turns betting, calling, raising, or folding based on their cards and the current pot.
@@ -41,24 +66,24 @@ Welcome to the **Poker Game Simulator**, a Python-based program designed to simu
 
 ## Game Structure
 1. **Table Initialization**:
-- Players are created with unique IDs and stacks.
-- A random player is assigned as the dealer.
+   - Players are created with unique IDs and stacks.
+   - A random player is assigned as the dealer.
 
 2. **Betting Rounds**:
-- **Pre-Flop**: Players are dealt two cards each.
-- **Flop**: Three community cards are dealt.
-- **Turn**: One additional community card is dealt.
-- **River**: One final community card is dealt.
+   - **Pre-Flop**: Players are dealt two cards each.
+   - **Flop**: Three community cards are dealt.
+   - **Turn**: One additional community card is dealt.
+   - **River**: One final community card is dealt.
 
 3. **Showdown**:
-- The best 5-card hand is evaluated for each player still in the game.
-- The winner(s) receive the pot.
+   - The best 5-card hand is evaluated for each player still in the game.
+   - The winner(s) receive the pot.
 
 4. **Blind System**:
-- Blinds are updated based on a specified rule (e.g., every 10 rounds, blinds increase by 1.5x).
+   - Blinds are updated based on a specified rule (e.g., every 10 rounds, blinds increase by 1.5x).
 
 5. **End of Game**:
-- The game ends when only one player has chips remaining.
+   - The game ends when only one player has chips remaining.
 
 ---
 
@@ -94,6 +119,7 @@ player_names = [
     ("Bot2", False)     # Additional AI Bot
 ] 
 ```
+
 ### Adjusting Game Settings
 Modify the following parameters in the `Table` initialization:
 - `initial_blind`: Starting value of the blinds.
@@ -111,8 +137,8 @@ The code includes several unit tests to ensure core functionality, such as:
 ---
 
 ## Future Improvements
+- add a good UI
 - Enhanced AI decision-making based on hand evaluation and pot odds.
-- Support for different poker variations (e.g., Texas Hold'em, Omaha).
 - Online multiplayer functionality.
 
 ---

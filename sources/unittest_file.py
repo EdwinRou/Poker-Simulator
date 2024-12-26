@@ -13,6 +13,7 @@ from main import (
     RANK_ORDER
 )
 
+
 class TestCard(unittest.TestCase):
     def test_card_creation(self):
         card = Card(suit="Hearts", rank="Ace")

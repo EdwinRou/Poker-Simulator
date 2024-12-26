@@ -1,4 +1,1 @@
-random
-itertools
-dataclasses
-enum
+pytest
