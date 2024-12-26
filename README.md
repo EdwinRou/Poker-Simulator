@@ -52,7 +52,7 @@ Welcome to the **Poker Game Simulator**, a Python-based program designed to simu
      docker run -it poker-simulator
      ```
 
-By default, the game is set up as a **Heads-Up** (one human player vs. one AI bot).
+By default, the game is set up with three players, all controlled by AI bots.
 
 ---
 
@@ -111,14 +111,18 @@ By default, the game is set up as a **Heads-Up** (one human player vs. one AI bo
 ## Customization
 
 ### Adding Players
-You can add more players by modifying the `player_names` in the `main` function:
+You can add more players or customize player settings by modifying the `player_names` and other parameters in the `main` function:
 ```python
 player_names = [
     ("Player1", True),  # Human Player
     ("Bot1", False),    # AI Bot
     ("Bot2", False)     # Additional AI Bot
-] 
+]
 ```
+- **Stacks**: Adjust the `initial_stack` parameter in the `Table` initialization to set each player's starting chips.
+- **Player Types**: Change the second value in the tuple to `True` for human players or `False` for AI-controlled players.
+
+---
 
 ### Adjusting Game Settings
 Modify the following parameters in the `Table` initialization:
