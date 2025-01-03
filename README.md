@@ -3,6 +3,8 @@
 Welcome to the **Poker Game Simulator**, a Python-based program designed to simulate a poker game with support for betting, player actions, and hand evaluation. This project provides a modular structure to handle the complexities of poker gameplay, including card dealing, betting rounds, and determining winners.
 
 The only version of Poker currently supported is the classic No Limit Texas Hold'em. A game ends when only one player remains at the table (i.e., all other players have lost all their chips).
+
+
 ---
 
 ### Table of Contents
