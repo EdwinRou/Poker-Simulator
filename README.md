@@ -34,6 +34,14 @@ The only version of Poker currently supported is the classic No Limit Texas Hold
 - Python 3.8+
 - Standard Python libraries (`random`, `itertools`, `dataclasses`, `enum`)
 - Optional: [Docker](https://www.docker.com/) for containerized execution.
+- pytest :
+   ```bash
+   pip install pytest
+    ```
+   or
+     ```bash
+   pip install -r requirements.txt
+    ```
 
 ---
 
@@ -45,6 +53,9 @@ The only version of Poker currently supported is the classic No Limit Texas Hold
    ```bash
    python sources/main.py
     ```
+
+or
+
 3. **Run Using Docker**:
    - Build the Docker image:
      ```bash
